@@ -1,15 +1,36 @@
 const express = require('express')
 const app = express()
 const Joi = require('joi')
+const mongoose = require('mongoose')
 
 app.use(express.json()) // converts any json input from the user into javascript code
 
-// mock database in the form of array
-const workshops = [
-    {id : 1, name :'workshop1'},
-    {id : 2, name :'workshop2'},
-    {id : 3, name :'workshop3'},
-]
+// connect database
+mongoose.connect('mongodb://localhost:27018/my_captain_workshop', { useNewUrlParser: true }, { useUnifiedTopology: true })
+    .then(() => console.log('connected to DB'))
+    .catch(err => console.log(err))
+ 
+// structure | scheme
+const workshopSchema = new mongoose.Schema({
+    name:{  // properties of name field
+        type : String,
+        required : true,
+        minlength : 3
+    }
+})
+
+// model the structure : create a class from schema
+const Workshop = mongoose.model('Workshop',workshopSchema)
+
+/* line 23 can be written as 
+const Workshop = mongoose.model('Workshop',new mongoose.Schema({
+    name:{  // properties of name field
+        type : String,
+        required : true,
+        minlength : 3
+    }
+})
+*/
 
 // get  route
 app.get('/' , (req,res) => {
@@ -17,11 +38,14 @@ app.get('/' , (req,res) => {
 })
 
 // get route to print whole array
-app.get('/api/workshops', (req,res) => {
-    res.send(workshops)
+app.get('/api/workshops',async (req,res) => {
+   const workshops = await Workshop.find()
+   res.send(workshops)
 })
 
 // get route to print different elements 
+
+/*
 app.get('/api/workshops/1' , (req,res) => {
     res.send(workshops[0])
 })
@@ -31,30 +55,22 @@ app.get('/api/workshops/2' , (req,res) => {
 app.get('/api/workshops/3' , (req,res) => {
     res.send(workshops[2])
 })
+*/
 
-app.get('/api/workshops/:id' , (req,res) => {
-   const workshop =  workshops.find(w => w.id === parseInt(req.params.id))
+app.get('/api/workshops/:id' , async(req,res) => {
+   const workshop = await Workshop.findById(req.params.id)
    if(!workshop) return res.status(404).send('Requested workshop not found')
    // printing the new array
     res.send(workshop)
 })
 
 // post route
-// schema is used to describe the general structure of database
-app.post('/api/workshops', (req,res) => {
-    const schema ={  
-      name : Joi.string().min(3).required()  // name with minimum 3 characters, is string and is required
-    } 
-
-    const result = Joi.validate(req.body, schema) //returns object
-    if(result.error) return res.status(400).send(result.error.details[0].message)
-    const workshop = {
-        id : workshops.length + 1,
-        name : req.body.name
-    }
-    workshops.push(workshop)
-    // printing the new array
-    res.send(workshops)
+app.post('/api/workshops',async (req,res) => {
+    const workshop =  new Workshop({
+        name: req.body.name
+    })
+    await workshop.save()
+    res.send(workshop)
 })
 
 // put route
