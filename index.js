@@ -1,12 +1,11 @@
 const express = require('express')
 const app = express()
-
 const Joi = require('joi')
 const mongoose = require('mongoose') // for database
 
 app.use(express.json()) // converts any json input from the user into javascript code
 
-// connect database
+// connect database - MongoDB
 mongoose.connect('mongodb://localhost:27018/my_captain_workshop', { useNewUrlParser: true }, { useUnifiedTopology: true })
     .then(() => console.log('connected to DB'))
     .catch(err => console.log(err))
@@ -24,7 +23,7 @@ const workshopSchema = new mongoose.Schema({
 // model the structure : create a class from schema
 const Workshop = mongoose.model('Workshop',workshopSchema)
 
-/* line 23 can be written as 
+/* line 25 can be written as 
 const Workshop = mongoose.model('Workshop',new mongoose.Schema({
     name:{  // properties of name field
         type : String,
@@ -75,28 +74,16 @@ app.post('/api/workshops',async (req,res) => {
     res.send(workshop)
 })
 
-// put route
-app.put('/api/workshops/:id',async (req,res) => {
-    console.log('id : '+ req.params.id)
-    console.log('new data : '+ req.body.name)
-/*
-    const workshop1 = {
-        name : req.body.name
-    }
-     const upd = await Workshop.findByIdAndUpdate(req.params.id, workshop1,function(err){
-         if(err){
-            console.log(err)
-         }
-         else{
-            res.send(Workshop)
-         } 
+// put route - update
+app.put('/api/workshops/:id', (req,res) => {
+     Workshop.findByIdAndUpdate(req.params.id,req.body).exec(function(err,result){
+         Workshop.findById(req.params.id).exec(function(err,result){
+            res.status(200).json(result)
+         })
      })
-    // if(!upd) return res.status(400).send(result.error.details[0].message)
-      // printing the new array
-     */ 
 })
 
-// delete route
+// delete route -delete
 app.delete('/api/workshops/:id' , (req,res) => {
     Workshop.deleteOne({_id:req.params.id})
     .then(
@@ -116,7 +103,6 @@ app.delete('/api/workshops/:id' , (req,res) => {
         )
     })
 })
-
 
 // server
 app.listen(5000, () =>{ 
