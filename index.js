@@ -1,7 +1,8 @@
 const express = require('express')
 const app = express()
+
 const Joi = require('joi')
-const mongoose = require('mongoose')
+const mongoose = require('mongoose') // for database
 
 app.use(express.json()) // converts any json input from the user into javascript code
 
@@ -10,7 +11,8 @@ mongoose.connect('mongodb://localhost:27018/my_captain_workshop', { useNewUrlPar
     .then(() => console.log('connected to DB'))
     .catch(err => console.log(err))
  
-// structure | scheme
+
+// structure | schema
 const workshopSchema = new mongoose.Schema({
     name:{  // properties of name field
         type : String,
@@ -32,7 +34,7 @@ const Workshop = mongoose.model('Workshop',new mongoose.Schema({
 })
 */
 
-// get  route
+// get  route - print data 
 app.get('/' , (req,res) => {
     res.send('HELLO WORLD')
 })
@@ -64,7 +66,7 @@ app.get('/api/workshops/:id' , async(req,res) => {
     res.send(workshop)
 })
 
-// post route
+// post route - add new
 app.post('/api/workshops',async (req,res) => {
     const workshop =  new Workshop({
         name: req.body.name
@@ -74,38 +76,47 @@ app.post('/api/workshops',async (req,res) => {
 })
 
 // put route
-app.put('/api/workshops/:id', (req,res) => {
-    //  check if id is valid
-    const workshop =  workshops.find(w => w.id === parseInt(req.params.id))
-    if(!workshop) return res.status(400).send(result.error.details[0].message)
-
-    // check if data is valid
-    const schema ={  
-        name : Joi.string().min(3).required()  // name with minimum 3 characters, is string and is required
-      } 
-  
-      const result = Joi.validate(req.body, schema) //returns object
-      if(result.error) return res.status(400).send(result.error.details[0].message)
-
-    //  entering new name
-      workshop.name = req.body.name
-
+app.put('/api/workshops/:id',async (req,res) => {
+    console.log('id : '+ req.params.id)
+    console.log('new data : '+ req.body.name)
+/*
+    const workshop1 = {
+        name : req.body.name
+    }
+     const upd = await Workshop.findByIdAndUpdate(req.params.id, workshop1,function(err){
+         if(err){
+            console.log(err)
+         }
+         else{
+            res.send(Workshop)
+         } 
+     })
+    // if(!upd) return res.status(400).send(result.error.details[0].message)
       // printing the new array
-      res.send(workshops)
+     */ 
 })
 
 // delete route
 app.delete('/api/workshops/:id' , (req,res) => {
-    //  check if id is valid
-    const workshop =  workshops.find(w => w.id === parseInt(req.params.id))
-    if(!workshop) return res.status(404).send('Requested workshop not found')
-// taking index of the object 
-    const index = workshops.indexOf(workshop)
-    // splicing the object
-    workshops.splice(index,1)
-    // printing the new array
-    res.send(workshops)
+    Workshop.deleteOne({_id:req.params.id})
+    .then(
+        () => {
+            res.status(200).json(
+                {
+                    message:'DELETED'
+                }
+            )
+        }
+    )
+    .catch((error) => {
+        res.status(400).json(
+            {
+                error:error
+            }
+        )
+    })
 })
+
 
 // server
 app.listen(5000, () =>{ 
